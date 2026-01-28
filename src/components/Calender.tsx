@@ -169,9 +169,10 @@ export const Calender: React.FC<CalenderProps> = ({ nextPage }) => {
       if (partyBit === 1) {
         // Joiner: Set up signaling and send calendar to host
         const peerId = meetingId + "-other";
+        const signalingUrl = import.meta.env.VITE_SIGNALING_URL || "http://localhost:3030";
         const channel = new SignalingChannel(
           peerId,
-          "http://localhost:3030/",
+          signalingUrl,
           "SIGNALING123"
         );
 

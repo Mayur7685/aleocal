@@ -63,9 +63,10 @@ export const AddParticipants: React.FC<AddParticipantsProps> = ({ nextPage }) =>
 
       // Set up signaling channel for peer communication
       const peerId = meetingCode;
+      const signalingUrl = import.meta.env.VITE_SIGNALING_URL || "http://localhost:3030";
       const channel = new SignalingChannel(
         peerId,
-        "http://localhost:3030/",
+        signalingUrl,
         "SIGNALING123"
       );
 
