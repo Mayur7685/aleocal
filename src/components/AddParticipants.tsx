@@ -71,7 +71,6 @@ export const AddParticipants: React.FC<AddParticipantsProps> = ({ nextPage }) =>
       );
 
       channel.onMessage = (message: any) => {
-        console.log("Host received message:", message);
         if (message.from === peerId + "-other") {
           if (message.message) {
             // Received other party's calendar slots

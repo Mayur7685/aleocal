@@ -72,10 +72,6 @@ export const Results: React.FC<ResultsProps> = ({ nextPage }) => {
 
     setLoading(true);
     try {
-      console.log("Computing intersection...");
-      console.log("My calendar record:", myCalendarRecord);
-      console.log("Other party slots:", otherCalendarSlots);
-
       // Notify other party that computation is starting
       if (signalingChannel) {
         signalingChannel.sendTo(meetingId + "-other", { fin: true });
@@ -91,8 +87,6 @@ export const Results: React.FC<ResultsProps> = ({ nextPage }) => {
         otherCalendarSlots,
         meetingIdField
       );
-
-      console.log("Computation result:", computeResult);
 
       setResult(computeResult);
 

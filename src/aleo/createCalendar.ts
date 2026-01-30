@@ -238,8 +238,6 @@ export async function createCalendar(
       finalCalendarId,
     ];
 
-    console.log('Creating calendar with inputs:', inputs);
-
     // Execute the transition locally (generates ZK proof)
     const result = await executeOffline(
       account,
@@ -247,8 +245,6 @@ export async function createCalendar(
       'create_calendar',
       inputs
     );
-
-    console.log('Calendar created:', result);
 
     return {
       record: result.outputs[0],
@@ -280,8 +276,6 @@ export async function createCalendarCommitment(
       otherParty,
     ];
 
-    console.log('Creating commitment with inputs:', inputs);
-
     const result = await programManager.run(
       aleoConfig.program.programId,
       'commit_calendar',
@@ -291,8 +285,6 @@ export async function createCalendarCommitment(
       undefined,
       account.privateKey
     );
-
-    console.log('Commitment created:', result);
 
     return {
       commitment: extractFieldFromOutput(result.outputs[1], 'commitment'),
@@ -324,8 +316,6 @@ export async function shareCalendar(
       recipient,
     ];
 
-    console.log('Sharing calendar with inputs:', inputs);
-
     const result = await programManager.run(
       aleoConfig.program.programId,
       'share_calendar',
@@ -335,8 +325,6 @@ export async function shareCalendar(
       undefined,
       account.privateKey
     );
-
-    console.log('Calendar shared:', result);
 
     return {
       share: result.outputs[1],

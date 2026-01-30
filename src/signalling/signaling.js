@@ -14,18 +14,15 @@ class SignalingChannel {
     }
     connect() {
         this.socket.on("connect", () => {
-            console.log("Connected with id", this.socket.id);
             this.socket.emit("ready", this.peerId);
         });
-        this.socket.on("disconnect", () => {
-            console.log("Disconnected");
-        });
+        this.socket.on("disconnect", () => {});
         this.socket.on("connect_error", (error) => {
-            console.log("Connection error", error.message);
+            console.error("Connection error:", error.message);
         });
         this.socket.on("message", this.onMessage);
         this.socket.on("uniquenessError", (message) => {
-            console.error(`Error: ${message.error}`);
+            console.error("Signaling error:", message.error);
         });
         this.socket.connect();
     }

@@ -145,7 +145,6 @@ export const Calender: React.FC<CalenderProps> = ({ nextPage }) => {
     setLoading(true);
     try {
       const slots = calender.flat();
-      console.log("Submitting calendar slots:", slots);
 
       // Generate a unique calendar ID
       const calendarId = await generateRandomField();
@@ -157,8 +156,6 @@ export const Calender: React.FC<CalenderProps> = ({ nextPage }) => {
         slots,
         calendarId
       );
-
-      console.log("Calendar record created:", record);
 
       // Store the calendar record and slots
       setMyCalendarRecord(record);
@@ -177,13 +174,11 @@ export const Calender: React.FC<CalenderProps> = ({ nextPage }) => {
         );
 
         channel.onMessage = (message: any) => {
-          console.log("Joiner received message:", message);
           if (message.from === meetingId) {
             if (message.message) {
               if (message.message.result !== undefined) {
                 // Result received from host - store it and show on guest's screen
                 const bestSlot = parseInt(message.message.result);
-                console.log("Received result, best slot:", bestSlot);
                 setResult({
                   best_slot: bestSlot,
                   best_score: 1, // We don't get the score, just the slot

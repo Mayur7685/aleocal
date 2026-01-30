@@ -180,8 +180,6 @@ export async function computeIntersection(
       meetingId,
     ];
 
-    console.log('Computing intersection with CalendarShare...');
-
     const result = await programManager.run(
       aleoConfig.program.programId,
       'compute_intersection',
@@ -192,8 +190,6 @@ export async function computeIntersection(
       account.privateKey
     );
 
-    console.log('Intersection computed:', result);
-
     // Parse the MeetingResult from output
     return parseMeetingResult(result.outputs[2]);
   } catch (error) {
@@ -203,49 +199,109 @@ export async function computeIntersection(
 }
 
 /**
+ * Compute intersection using the ZK server API
+ * This offloads computation to the server which has real Aleo SDK
+ */
+async function computeIntersectionViaServer(
+  mySlots: number[],
+  otherSlots: number[],
+  meetingId: string,
+  generateProof: boolean = true
+): Promise<MeetingResult> {
+  const signalingUrl = import.meta.env.VITE_SIGNALING_URL || 'http://localhost:3030';
+
+  const response = await fetch(`${signalingUrl}/api/calendar/intersect`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      calendar1: mySlots,
+      calendar2: otherSlots,
+      meetingId,
+      generateProof,
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Server ZK API error: ${response.statusText}`);
+  }
+
+  const result = await response.json();
+
+  return {
+    owner: '',
+    meeting_id: meetingId,
+    best_slot: result.bestSlot,
+    best_score: result.bestScore,
+    valid: result.valid,
+  };
+}
+
+/**
+ * Extract slots from a calendar record string
+ */
+function extractSlotsFromRecord(record: string): number[] {
+  const slots: number[] = [];
+  for (let i = 0; i < 8; i++) {
+    const match = record.match(new RegExp(`slot_${i}:\\s*(\\d+)u8`));
+    slots.push(match ? parseInt(match[1]) : 0);
+  }
+  return slots;
+}
+
+/**
  * Compute intersection directly with raw slot values
  * Useful when you have the other party's slots directly (e.g., via signaling)
+ * Uses server's Aleo ZK API as primary (real ZK proofs), browser SDK as fallback
  */
 export async function computeIntersectionDirect(
   account: AleoAccount,
   myCalendarRecord: string,
   otherSlots: number[],
-  meetingId: string
+  meetingId: string,
+  useBrowserFallback: boolean = true
 ): Promise<MeetingResult> {
+  if (otherSlots.length !== 8) {
+    throw new Error('Must provide exactly 8 slot values');
+  }
+
+  // Extract my slots from calendar record
+  const mySlots = extractSlotsFromRecord(myCalendarRecord);
+
+  // PRIMARY: Use server's Aleo ZK API (real ZK proofs)
   try {
-    if (otherSlots.length !== 8) {
-      throw new Error('Must provide exactly 8 slot values');
+    const result = await computeIntersectionViaServer(mySlots, otherSlots, meetingId, true);
+    return result;
+  } catch (serverError) {
+    // FALLBACK: Try browser SDK if enabled
+    if (useBrowserFallback) {
+      try {
+        const inputs = [
+          myCalendarRecord,
+          `${otherSlots[0]}u8`,
+          `${otherSlots[1]}u8`,
+          `${otherSlots[2]}u8`,
+          `${otherSlots[3]}u8`,
+          `${otherSlots[4]}u8`,
+          `${otherSlots[5]}u8`,
+          `${otherSlots[6]}u8`,
+          `${otherSlots[7]}u8`,
+          meetingId,
+        ];
+
+        const result = await executeOffline(
+          account,
+          ALEOCAL_PROGRAM,
+          'compute_intersection_direct',
+          inputs
+        );
+
+        return parseMeetingResult(result.outputs[1]);
+      } catch (browserError) {
+        throw new Error(`ZK computation failed: Server - ${serverError}, Browser - ${browserError}`);
+      }
     }
 
-    const inputs = [
-      myCalendarRecord,
-      `${otherSlots[0]}u8`,
-      `${otherSlots[1]}u8`,
-      `${otherSlots[2]}u8`,
-      `${otherSlots[3]}u8`,
-      `${otherSlots[4]}u8`,
-      `${otherSlots[5]}u8`,
-      `${otherSlots[6]}u8`,
-      `${otherSlots[7]}u8`,
-      meetingId,
-    ];
-
-    console.log('Computing direct intersection...');
-
-    const result = await executeOffline(
-      account,
-      ALEOCAL_PROGRAM,
-      'compute_intersection_direct',
-      inputs
-    );
-
-    console.log('Direct intersection computed:', result);
-
-    // Parse the MeetingResult from output
-    return parseMeetingResult(result.outputs[1]);
-  } catch (error) {
-    console.error('Failed to compute direct intersection:', error);
-    throw error;
+    throw serverError;
   }
 }
 
@@ -288,8 +344,6 @@ export async function registerMeeting(
       `${ts}u64`,
     ];
 
-    console.log('Registering meeting on-chain...');
-
     const result = await programManager.execute(
       aleoConfig.program.programId,
       'register_meeting',
@@ -300,7 +354,6 @@ export async function registerMeeting(
       account.privateKey
     );
 
-    console.log('Meeting registered:', result);
     return result.transactionId || '';
   } catch (error) {
     console.error('Failed to register meeting:', error);
@@ -324,8 +377,6 @@ export async function submitCommitment(
       commitment,
     ];
 
-    console.log('Submitting commitment on-chain...');
-
     const result = await programManager.execute(
       aleoConfig.program.programId,
       'submit_commitment',
@@ -336,7 +387,6 @@ export async function submitCommitment(
       account.privateKey
     );
 
-    console.log('Commitment submitted:', result);
     return result.transactionId || '';
   } catch (error) {
     console.error('Failed to submit commitment:', error);
@@ -356,8 +406,6 @@ export async function completeMeeting(
 
     const inputs = [meetingId];
 
-    console.log('Completing meeting on-chain...');
-
     const result = await programManager.execute(
       aleoConfig.program.programId,
       'complete_meeting',
@@ -368,7 +416,6 @@ export async function completeMeeting(
       account.privateKey
     );
 
-    console.log('Meeting completed:', result);
     return result.transactionId || '';
   } catch (error) {
     console.error('Failed to complete meeting:', error);

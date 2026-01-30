@@ -91,7 +91,7 @@ export class MockProgramManager {
   private account: MockAccount | null = null;
 
   constructor(apiUrl?: string) {
-    console.log('[MockAleo] ProgramManager initialized with:', apiUrl);
+    // Mock initialization
   }
 
   setAccount(account: MockAccount) {
@@ -108,8 +108,6 @@ export class MockProgramManager {
     _feeRecord?: any,
     privateKey?: string
   ): Promise<{ outputs: string[] }> {
-    console.log(`[MockAleo] Running ${programId}::${functionName} with inputs:`, inputs);
-
     // Simulate processing time
     await new Promise(resolve => setTimeout(resolve, 500 + Math.random() * 500));
 
@@ -263,9 +261,6 @@ export class MockProgramManager {
     functionName: string,
     inputs: string[]
   ): Promise<{ getOutputs: () => string[]; getProof?: () => string }> {
-    console.log(`[MockAleo] Executing ${functionName} offline...`);
-    console.log('[MockAleo] Inputs:', inputs);
-
     // Use the existing run method to process the function
     const result = await this.run('aleocal.aleo', functionName, inputs);
 
@@ -285,8 +280,6 @@ export class MockProgramManager {
     _imports?: any,
     privateKey?: string
   ): Promise<{ transactionId: string }> {
-    console.log(`[MockAleo] Executing ${programId}::${functionName} on-chain with fee:`, fee);
-
     // Simulate processing time
     await new Promise(resolve => setTimeout(resolve, 1000 + Math.random() * 1000));
 
@@ -302,7 +295,7 @@ export class MockProgramManager {
 // Mock Network Client
 export class MockNetworkClient {
   constructor(apiUrl?: string) {
-    console.log('[MockAleo] NetworkClient initialized with:', apiUrl);
+    // Mock initialization
   }
 
   async getProgramMappingValue(
@@ -310,8 +303,6 @@ export class MockNetworkClient {
     mappingName: string,
     key: string
   ): Promise<string | null> {
-    console.log(`[MockAleo] Getting ${programId}::${mappingName}[${key}]`);
-
     // Simulate network delay
     await new Promise(resolve => setTimeout(resolve, 200));
 

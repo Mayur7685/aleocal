@@ -41,7 +41,6 @@ export async function initializeAleoSDK(): Promise<any> {
     try {
       // Check if we should use mock SDK
       if (isUsingMockSDK()) {
-        console.log('[Aleo] Using mock SDK (configured via REACT_APP_USE_MOCK_SDK)');
         const { MockAleoSDK } = await import('./mockAleoSDK');
         sdkInstance = MockAleoSDK;
         sdkStatus = { isInitialized: true, isUsingMock: true, error: null };
@@ -50,7 +49,6 @@ export async function initializeAleoSDK(): Promise<any> {
       }
 
       // Try to load the real SDK
-      console.log('[Aleo] Initializing real SDK...');
 
       // Dynamic import of the SDK
       let sdk: any;
@@ -67,15 +65,12 @@ export async function initializeAleoSDK(): Promise<any> {
         throw new Error('SDK loaded but Account class not found');
       }
 
-      console.log('[Aleo] SDK loaded successfully (WASM auto-initialized in v0.9.15+)');
       sdkInstance = sdk;
       isWasmInitialized = true;
       sdkStatus = { isInitialized: true, isUsingMock: false, error: null };
 
       return sdkInstance;
     } catch (error: any) {
-      console.warn('[Aleo] Failed to initialize real SDK, falling back to mock:', error.message);
-
       // Fallback to mock SDK
       const { MockAleoSDK } = await import('./mockAleoSDK');
       sdkInstance = MockAleoSDK;
@@ -214,15 +209,11 @@ export async function executeOffline(
   // Note: Thread pool initialization requires SharedArrayBuffer which needs specific CORS headers
   // For now, we skip thread pool and run in single-threaded mode
   // This is slower but works without special server configuration
-  console.log('[Aleo] Running in single-threaded mode (no thread pool)');
 
   const programManager = new sdk.ProgramManager();
   programManager.setAccount(new sdk.Account({ privateKey: account.privateKey }));
 
   try {
-    console.log(`[Aleo] Executing ${functionName} locally with ZK proof...`);
-    console.log('[Aleo] Inputs:', inputs);
-
     // Use programManager.run() for local execution with ZK proof generation
     // Signature: run(program, function_name, inputs, proveExecution, imports, keySearchParams, provingKey, verifyingKey, privateKey, offlineQuery)
     const executionResponse = await programManager.run(
@@ -257,8 +248,6 @@ export async function executeOffline(
       throw new Error('Unexpected execution response format');
     }
 
-    console.log('[Aleo] Execution outputs:', outputs);
-
     return {
       outputs: outputs,
       proof: proof,
@@ -266,16 +255,13 @@ export async function executeOffline(
   } catch (error: any) {
     // Check if this is an Atomics.wait threading error
     if (error.message?.includes('Atomics.wait') || error.message?.includes('cannot be called')) {
-      console.warn('[Aleo] Threading not available, falling back to mock execution');
       // Fall back to mock SDK for this execution
       const { MockProgramManager } = await import('./mockAleoSDK');
       const mockPm = new MockProgramManager();
       mockPm.setAccount({ address: () => ({ to_string: () => account.address }) } as any);
       const mockResult = await mockPm.run(programCode, functionName, inputs, true);
-      console.log('[Aleo] Mock execution outputs:', mockResult.outputs);
       return { outputs: mockResult.outputs, proof: undefined };
     }
-    console.error('[Aleo] Local execution failed:', error);
     throw new Error(`Local execution failed: ${error.message}`);
   }
 }
@@ -294,10 +280,6 @@ export async function executeOnChain(
   const programManager = await createProgramManager(account);
 
   try {
-    console.log(`[Aleo] Executing ${programId}::${functionName} on-chain...`);
-    console.log('[Aleo] Inputs:', inputs);
-    console.log('[Aleo] Fee:', fee);
-
     const txId = await programManager.execute(
       programId,
       functionName,
@@ -305,10 +287,8 @@ export async function executeOnChain(
       fee
     );
 
-    console.log('[Aleo] Transaction submitted:', txId);
     return txId;
   } catch (error: any) {
-    console.error('[Aleo] On-chain execution failed:', error);
     throw new Error(`On-chain execution failed: ${error.message}`);
   }
 }
@@ -327,7 +307,6 @@ export async function waitForTransaction(
     try {
       const transaction = await networkClient.getTransaction(txId);
       if (transaction) {
-        console.log('[Aleo] Transaction confirmed:', txId);
         return transaction;
       }
     } catch (error) {
@@ -359,7 +338,6 @@ export async function getMappingValue(
     );
     return value;
   } catch (error) {
-    console.warn(`[Aleo] Failed to get mapping value: ${programId}::${mappingName}[${key}]`);
     return null;
   }
 }
@@ -389,12 +367,9 @@ export async function deployProgram(
   const programManager = await createProgramManager(account);
 
   try {
-    console.log('[Aleo] Deploying program...');
     const txId = await programManager.deploy(programCode, fee);
-    console.log('[Aleo] Deployment transaction:', txId);
     return txId;
   } catch (error: any) {
-    console.error('[Aleo] Program deployment failed:', error);
     throw new Error(`Program deployment failed: ${error.message}`);
   }
 }
@@ -413,7 +388,6 @@ export async function getAccountBalance(address: string): Promise<number> {
     const data = await response.json();
     return data.balance || 0;
   } catch (error) {
-    console.warn('[Aleo] Failed to get account balance:', error);
     return 0;
   }
 }
@@ -422,9 +396,6 @@ export async function getAccountBalance(address: string): Promise<number> {
  * Request testnet credits from faucet
  */
 export async function requestFaucetCredits(address: string): Promise<boolean> {
-  console.log('[Aleo] Testnet faucet request for:', address);
-  console.log('[Aleo] Visit https://faucet.aleo.org to request testnet credits');
-
   // Note: Automated faucet requests may not be available
   // Users should manually request credits from the faucet website
   return false;
