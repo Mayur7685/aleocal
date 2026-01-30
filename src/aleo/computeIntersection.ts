@@ -208,7 +208,7 @@ async function computeIntersectionViaServer(
   meetingId: string,
   generateProof: boolean = true
 ): Promise<MeetingResult> {
-  const signalingUrl = import.meta.env.VITE_SIGNALING_URL || 'http://localhost:3030';
+  const signalingUrl = (import.meta.env.VITE_SIGNALING_URL || 'http://localhost:3030').replace(/\/$/, '');
 
   const response = await fetch(`${signalingUrl}/api/calendar/intersect`, {
     method: 'POST',
