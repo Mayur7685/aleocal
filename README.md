@@ -2,34 +2,43 @@
 
 > Find the perfect meeting time without revealing your schedule
 
-[![Aleo](https://img.shields.io/badge/Built%20on-Aleo-000000)](https://aleo.org)
-[![Leo](https://img.shields.io/badge/Smart%20Contract-Leo-000000)](https://leo-lang.org)
-[![License](https://img.shields.io/badge/License-MIT-000000.svg)](LICENSE)
+<img width="1584" height="396" alt="ALEOCAL-BANNER-modified" src="https://github.com/user-attachments/assets/fb89ac84-c1b5-49cb-ad7b-e573bb023eb5" />
 
----
+
+[Project Overview](#1-project-overview) • [Demo Walkthrough](#3-demo-walkthrough) • [Technical Documentation](#4-technical-documentation) • [Installation & Setup](#5-installation--setup) • [Privacy & Security](#6-privacy--security) • [Limitations](#7-current-limitations) • [Roadmap](#8-roadmap)
+
 
 ## 1. Project Overview
 
 ### What is AleoCal?
 
-AleoCal is a **zero-knowledge calendar scheduling application** built on the Aleo blockchain. It allows two parties to find common available meeting times without revealing their full calendar to each other.
+AleoCal is a **zero-knowledge calendar scheduling application** built on the Aleo blockchain. It enables two parties to find common available meeting times without revealing their full calendars to each other.
 
 ### The Problem
 
+Consider two parties who want to meet in the near future. The very first problem they face is simple but painful: **finding a common time when both are available.**
+
 Traditional calendar scheduling tools like Calendly, Doodle, or Google Calendar require users to:
+
 - Share their entire availability publicly
 - Trust third-party servers with sensitive schedule data
 - Reveal work patterns, busy times, and availability to strangers
 
 **This is a privacy nightmare.** Your calendar reveals:
+
 - When you're in meetings (busy/important)
 - When you're free (potentially vulnerable)
 - Work patterns and habits
 - Personal appointments and commitments
+- Lunch breaks and daily routines
+
+The alternative is the classic hit-and-trial approach: "Are you free at 3?" "No." "How about 4?" "Still no." This process is frustrating, inefficient, and still leaks partial information about your schedule.
 
 ### Our Solution
 
-AleoCal uses **Zero-Knowledge Proofs (ZKPs)** to compute calendar intersections privately:
+AleoCal uses **Zero-Knowledge Proofs (ZKPs)** and Aleo's privacy-preserving computation tools to privately calculate the intersection of two calendars and find a common meeting time.
+
+Technically, this operation is known as **Private Set Intersection (PSI)**.
 
 ```
 Host Calendar:    [2, 0, 3, 0, 1, 0, 4, 0]  (preference scores 0-4)
@@ -53,113 +62,112 @@ Result:           Best slot = 6 (4pm-5pm with score 8)
 | Third parties can analyze patterns | Cryptographic privacy guarantees |
 | Trust required in service provider | Trustless ZK verification |
 
-### Product Market Fit (PMF)
+### Target Users
 
-**Target Users:**
 1. **Enterprise Teams** - Sensitive internal meetings, M&A discussions
 2. **Healthcare** - Doctor-patient scheduling without revealing other appointments
 3. **Legal** - Attorney-client meetings with confidentiality requirements
 4. **Executive Assistants** - Scheduling for C-level executives
 5. **Privacy-Conscious Individuals** - Anyone who values schedule privacy
 
-**Market Size:**
+### Market Opportunity
+
 - Calendar scheduling market: $500M+ annually
 - Enterprise privacy software: $15B+ market
 - Growing regulatory pressure (GDPR, CCPA) driving privacy adoption
 
-### Go-To-Market (GTM) Strategy
-
-**Phase 1: Developer Community (Current)**
-- Open-source on GitHub
-- Aleo hackathon participation
-- Developer documentation and tutorials
-
-**Phase 2: Early Adopters**
-- Privacy-focused tech companies
-- Crypto-native organizations
-- Healthcare pilot programs
-
-**Phase 3: Enterprise**
-- SOC2 compliance certification
-- Enterprise integrations (Outlook, Google Calendar)
-- White-label solutions
-
-**Phase 4: Consumer**
-- Browser extensions
-- Mobile apps
-- Integration with existing calendar apps
-
 ---
 
-## 2. Working Demo
+## 2. How It Works
 
-### Live Demo
+### Privacy-Preserving Intersection Algorithm
 
-**Frontend:** http://localhost:3006 (development)
+```
+Input:  A = [a₀, a₁, ..., a₇]  (Host preferences, 0-4)
+        B = [b₀, b₁, ..., b₇]  (Guest preferences, 0-4)
 
-**ZK Server:** http://localhost:3030
+Compute: C[i] = A[i] × B[i]    (Element-wise multiplication)
 
-### Demo Flow
+Output:  best_slot = argmax(C)  (Index of maximum value)
+         best_score = max(C)    (Maximum value)
+         valid = (best_score > 0)
+```
 
-#### Step 1: Connect Wallet
-- Install [Leo Wallet](https://leo.app) browser extension
-- Connect to Aleo Testnet Beta
-- Wallet popup will request connection approval
+**Why multiplication?**
 
-#### Step 2: Create or Join Event
-**Host:**
-1. Click "Create Event"
-2. Copy the generated Event Code
+- If either party is unavailable (0), product is 0
+- Higher preferences on both sides = higher score
+- Only the final result (best slot) is revealed
 
-**Guest:**
-1. Paste the Event Code
-2. Click "Join Event"
+### Data Flow
 
-#### Step 3: Select Availability
-- Click on time slots to set preference (1-4 scale)
-- Higher number = more preferred
-- X = unavailable (0)
+```
+1. Host creates event
+   └─> Generates unique event code (address:field)
+   └─> Registers with ZK Server via WebSocket
 
-#### Step 4: View Results
-- Both parties see the best meeting time
-- Only the optimal slot is revealed
-- Full calendars remain private
+2. Guest joins event
+   └─> Connects to ZK Server with event code
+   └─> Server links host and guest sockets
 
-### Smart Contract Deployment
+3. Both parties submit calendars
+   └─> Local ZK proof generation (or simulation)
+   └─> Calendar slots sent via encrypted channel
 
-The Leo smart contract is designed for Aleo Testnet:
+4. Host computes intersection
+   └─> Multiplication of preference values
+   └─> argmax to find best slot
+   └─> Result sent to both parties
 
-```leo
-program aleocal.aleo {
-    // Calendar record - encrypted on-chain
-    record Calendar {
-        owner: address,
-        day: DaySlots,
-        calendar_id: field,
-    }
-
-    // Meeting result - only reveals best slot
-    record MeetingResult {
-        owner: address,
-        meeting_id: field,
-        best_slot: u8,
-        best_score: u8,
-        valid: bool,
-    }
-
-    // Create encrypted calendar
-    transition create_calendar(...) -> Calendar
-
-    // Compute intersection privately
-    transition compute_intersection_direct(...) -> (Calendar, MeetingResult)
-}
+5. Result displayed
+   └─> Only best time slot revealed
+   └─> Full calendars remain private
 ```
 
 ---
 
-## 3. Technical Documentation
+## 3. Demo Walkthrough
+
+### Prerequisites
+
+- [Leo Wallet](https://leo.app) browser extension installed
+- Connection to Aleo Testnet Beta
+- Two browser profiles (for testing both host and guest)
+
+### Host Flow
+
+1. **Connect Wallet** - Click connect and approve the Leo Wallet popup
+2. **Create Event** - Click "Create Event" button
+3. **Select Availability** - Click on time slots to set preference (1-4 scale)
+   - Higher number = more preferred
+   - X = unavailable (0)
+4. **Share Code** - Copy the generated private event code and share with the guest
+
+### Guest Flow
+
+1. **Connect Wallet** - Use a different Aleo account than the host
+2. **Join Event** - Paste the private event code received from the host
+3. **Select Availability** - Choose available time slots (same 1-4 preference scale)
+4. **Submit** - Confirm your availability selection
+
+### Finding Common Time
+
+1. **Host Initiates** - Click "Find Common Time"
+2. **ZK Computation** - AleoCal runs Private Set Intersection on Aleo
+3. **Result Revealed** - Both parties see the mutually available time slot
+4. **Calendar Integration** - Block the slot on your Google Calendar
+
+**No manual coordination. No over-sharing. Just the final result.**
+
+---
+
+## 4. Technical Documentation
 
 ### Repository Structure
+
+**Frontend:** https://github.com/Mayur7685/aleocal
+
+**Backend/Server:** https://github.com/Mayur7685/aleo-zk-server
 
 ```
 aleo-aleocal/
@@ -220,67 +228,6 @@ aleo-aleocal/
     └─────────┘           └───────────┘
 ```
 
-### Data Flow
-
-```
-1. Host creates event
-   └─> Generates unique event code (address:field)
-   └─> Registers with ZK Server via WebSocket
-
-2. Guest joins event
-   └─> Connects to ZK Server with event code
-   └─> Server links host and guest sockets
-
-3. Both parties submit calendars
-   └─> Local ZK proof generation (or simulation)
-   └─> Calendar slots sent via encrypted channel
-
-4. Host computes intersection
-   └─> Multiplication of preference values
-   └─> argmax to find best slot
-   └─> Result sent to both parties
-
-5. Result displayed
-   └─> Only best time slot revealed
-   └─> Full calendars remain private
-```
-
-### Privacy Model
-
-#### What is Private?
-
-| Data | Private? | Notes |
-|------|----------|-------|
-| Individual time slot preferences | ✅ Yes | Never revealed |
-| Full calendar availability | ✅ Yes | Never shared |
-| Aleo wallet address | ⚠️ Pseudonymous | On-chain identity |
-| Best meeting time | ❌ No | Intentionally revealed |
-| Event participation | ⚠️ Partial | Parties know each other |
-
-#### Cryptographic Guarantees
-
-1. **Zero-Knowledge Proofs**: Calendar intersection computed without revealing inputs
-2. **Record Encryption**: Aleo records are encrypted to owner's view key
-3. **Local Execution**: ZK proofs generated client-side (no server sees data)
-
-#### Privacy-Preserving Intersection Algorithm
-
-```
-Input:  A = [a₀, a₁, ..., a₇]  (Host preferences, 0-4)
-        B = [b₀, b₁, ..., b₇]  (Guest preferences, 0-4)
-
-Compute: C[i] = A[i] × B[i]    (Element-wise multiplication)
-
-Output:  best_slot = argmax(C)  (Index of maximum value)
-         best_score = max(C)    (Maximum value)
-         valid = (best_score > 0)
-```
-
-**Why multiplication?**
-- If either party is unavailable (0), product is 0
-- Higher preferences on both sides = higher score
-- Only the final result (best slot) is revealed
-
 ### Technology Stack
 
 | Component | Technology | Purpose |
@@ -294,35 +241,65 @@ Output:  best_slot = argmax(C)  (Index of maximum value)
 | Signaling | Socket.io | Real-time calendar exchange |
 | Styling | Chakra UI | Component library |
 
-### Local Development
+### Smart Contract
 
-#### Prerequisites
+The Leo smart contract is designed for Aleo Testnet:
+
+```leo
+program aleocal.aleo {
+    // Calendar record - encrypted on-chain
+    record Calendar {
+        owner: address,
+        day: DaySlots,
+        calendar_id: field,
+    }
+
+    // Meeting result - only reveals best slot
+    record MeetingResult {
+        owner: address,
+        meeting_id: field,
+        best_slot: u8,
+        best_score: u8,
+        valid: bool,
+    }
+
+    // Create encrypted calendar
+    transition create_calendar(...) -> Calendar
+
+    // Compute intersection privately
+    transition compute_intersection_direct(...) -> (Calendar, MeetingResult)
+}
+```
+
+---
+
+## 5. Installation & Setup
+
+### Prerequisites
 
 - Node.js 18+
 - Leo Wallet browser extension
 - Aleo account (Testnet Beta)
 
-#### Installation
+### Installation
 
 ```bash
-# Clone repository
-git clone https://github.com/yourusername/aleo-aleocal.git
-cd aleo-aleocal
-
-# Install frontend dependencies
+# Clone frontend repository
+git clone https://github.com/Mayur7685/aleocal.git
 cd aleocal
 npm install
 
-# Install ZK server dependencies
-cd ../zk-server
+# Clone backend repository (in a separate directory)
+git clone https://github.com/Mayur7685/aleo-zk-server.git
+cd aleo-zk-server
 npm install
 ```
 
-#### Running the Application
+### Running the Application
 
 **Terminal 1 - ZK Server:**
 ```bash
-cd zk-server
+cd aleo-zk-server
 npm start
 # Server runs on http://localhost:3030
 ```
@@ -334,7 +311,7 @@ npm run dev
 # App runs on http://localhost:3006
 ```
 
-#### Testing with Two Users
+### Testing with Two Users
 
 1. Open http://localhost:3006 in Chrome Profile 1
 2. Open http://localhost:3006 in Chrome Profile 2
@@ -345,30 +322,25 @@ npm run dev
 7. Profile 1: Click "Find Common Time"
 8. Both see the result!
 
-### API Reference
+---
 
-#### ZK Server Endpoints
+## 6. Privacy & Security
 
-**Health Check**
-```
-GET /health
-Response: { "status": "ok", "message": "AleoCal ZK Server running", "peers": 0 }
-```
+### What is Private?
 
-**Compute Intersection (REST)**
-```
-POST /api/calendar/intersect
-Body: { "calendar1": [0,1,2,0,0,3,0,1], "calendar2": [1,0,2,0,3,0,1,0] }
-Response: { "success": true, "bestSlot": 2, "bestScore": 4, "valid": true }
-```
+| Data | Private? | Notes |
+|------|----------|-------|
+| Individual time slot preferences | ✅ Yes | Never revealed |
+| Full calendar availability | ✅ Yes | Never shared |
+| Aleo wallet address | ⚠️ Pseudonymous | On-chain identity |
+| Best meeting time | ❌ No | Intentionally revealed |
+| Event participation | ⚠️ Partial | Parties know each other |
 
-#### WebSocket Events
+### Cryptographic Guarantees
 
-| Event | Direction | Payload | Description |
-|-------|-----------|---------|-------------|
-| `ready` | Client→Server | `peerId` | Register peer connection |
-| `messageOne` | Client→Server | `{from, target, message}` | Send to specific peer |
-| `message` | Server→Client | `{from, target, message}` | Receive forwarded message |
+1. **Zero-Knowledge Proofs**: Calendar intersection computed without revealing inputs
+2. **Record Encryption**: Aleo records are encrypted to owner's view key
+3. **Local Execution**: ZK proofs generated client-side (no server sees data)
 
 ### Security Considerations
 
@@ -377,31 +349,58 @@ Response: { "success": true, "bestSlot": 2, "bestScore": 4, "valid": true }
 3. **Wallet Authentication**: Leo Wallet provides cryptographic identity
 4. **Event Codes**: Cryptographically random, hard to guess
 
-### Future Roadmap
+---
 
-- [ ] Deploy to Aleo Mainnet
-- [ ] Multi-party scheduling (3+ people)
-- [ ] Recurring meeting support
-- [ ] Calendar import (iCal, Google Calendar)
-- [ ] Mobile app (React Native)
-- [ ] Enterprise SSO integration
-- [ ] Audit by security firm
+## 7. Current Limitations
+
+| Limitation | Description |
+|------------|-------------|
+| **Two participants only** | Frontend currently supports 2 users, though backend is designed for multi-party |
+| **Single-day scheduling** | Meetings can only be scheduled one day in advance |
+| **Computation limits** | Multi-day scheduling requires larger computations that currently exceed limits |
+| **Manual event codes** | Users must manually copy/paste event codes |
 
 ---
 
-## Contributing
+## 8. Roadmap
+
+- [ ] Replace manual event codes with shareable links (connect wallet and join instantly)
+- [ ] Improved UX for availability selection
+- [ ] Multi-day scheduling with optimized computation
+- [ ] Multi-party scheduling (3+ participants)
+- [ ] Calendar imports from existing providers (iCal, Google Calendar)
+- [ ] Deploy to Aleo Mainnet
+- [ ] Browser extensions
+- [ ] Enterprise SSO integration
+
+---
+
+## 9. Contributing
 
 We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
-## License
+### How to Contribute
 
-MIT License - see [LICENSE](LICENSE) for details.
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
 
 ## Acknowledgments
 
-- Built for [Aleo Privacy Buildathon](https://aleo.org)
+- Built for [Aleo Privacy Buildathon](https://app.akindo.io/wave-hacks/gXdXJvJXxTJKBELvo)
 - Powered by [Leo Language](https://leo-lang.org)
 - UI components from [Chakra UI](https://chakra-ui.com)
+
+---
+
+## Links
+
+- **Frontend Repository:** https://github.com/Mayur7685/aleocal
+- **Backend Repository:** https://github.com/Mayur7685/aleo-zk-server
+- **Aleo Documentation:** https://developer.aleo.org
+- **Leo Language:** https://leo-lang.org
 
 ---
 
